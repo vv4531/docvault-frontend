@@ -4,6 +4,8 @@ import { useMutation, useQueryClient } from 'react-query';
 import { documentsApi } from '../api/client';
 import { TierBadge, DeptBadge } from './DocumentTable';
 
+const DEPTS = ['Finance','HR','Engineering','Legal','Product','Marketing','General'];
+
 function fmt(bytes) {
   if (!bytes) return '—';
   if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -17,7 +19,20 @@ function date(iso) {
 export default function DocumentDrawer({ doc, onClose }) {
   const qc = useQueryClient();
   const [rehydrated, setRehydrated] = useState(false);
+  const [editing, setEditing]       = useState(false);
+  const [draft, setDraft]           = useState({});
   const isArchive = doc.storageTier === 'Archive';
+
+  const startEdit = () => {
+    setDraft({
+      title:       doc.title       || '',
+      author:      doc.author      || '',
+      department:  doc.department  || 'General',
+      tags:        doc.tags?.join(', ') || '',
+      description: doc.description || '',
+    });
+    setEditing(true);
+  };
 
   const downloadMutation = useMutation(
     () => documentsApi.download(doc.id),
@@ -32,6 +47,22 @@ export default function DocumentDrawer({ doc, onClose }) {
   const rehydrateMutation = useMutation(
     (priority) => documentsApi.rehydrate(doc.id, priority),
     { onSuccess: () => { setRehydrated(true); qc.invalidateQueries('documents'); } }
+  );
+
+  const updateMutation = useMutation(
+    () => documentsApi.update(doc.id, {
+      title:       draft.title,
+      author:      draft.author,
+      department:  draft.department,
+      tags:        draft.tags.split(',').map(t => t.trim()).filter(Boolean),
+      description: draft.description,
+    }),
+    {
+      onSuccess: () => {
+        qc.invalidateQueries('documents');
+        setEditing(false);
+      },
+    }
   );
 
   const deleteMutation = useMutation(
@@ -54,7 +85,7 @@ export default function DocumentDrawer({ doc, onClose }) {
         {/* Header */}
         <div style={{ padding: '20px 24px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
           <div style={{
-            width: 44, height: 44, borderRadius: 10, background: 'rgba(37,99,235,0.15)',
+            width: 44, height: 44, borderRadius: 10, background: 'rgba(0,107,69,0.10)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             color: 'var(--accent-hi)', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
           }}>
@@ -74,43 +105,79 @@ export default function DocumentDrawer({ doc, onClose }) {
             <DeptBadge dept={doc.department} />
           </div>
 
-          {doc.description && (
-            <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.65, marginBottom: 20,
-              padding: '12px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: 8,
-              borderLeft: '3px solid var(--border-hi)' }}>
-              {doc.description}
-            </p>
-          )}
-
-          {/* Metadata table */}
-          <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 20 }}>
-            {[
-              ['Author',    doc.author],
-              ['Department', doc.department],
-              ['Uploaded',  date(doc.uploadedAt)],
-              ['File Size', fmt(doc.fileSizeBytes)],
-              ['Storage',   doc.storageTier],
-              ['Filename',  doc.filename || doc.title],
-            ].map(([k, v], i, arr) => (
-              <div key={k} style={{ display: 'flex', padding: '10px 14px',
-                borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
-                background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
-                <span style={{ width: 100, flexShrink: 0, fontSize: 11, color: 'var(--muted)', fontWeight: 700, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k}</span>
-                <span style={{ fontSize: 13, color: 'var(--text)', wordBreak: 'break-all' }}>{v}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Tags */}
-          {doc.tags?.length > 0 && (
+          {/* Edit form or static view */}
+          {editing ? (
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>Tags</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {doc.tags.map(t => (
-                  <span key={t} style={{ padding: '3px 9px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', color: '#94a3b8', fontSize: 12, border: '1px solid var(--border)' }}>#{t}</span>
+              {[
+                { label: 'Title',       key: 'title',       type: 'text' },
+                { label: 'Author',      key: 'author',      type: 'text' },
+                { label: 'Description', key: 'description', type: 'textarea' },
+                { label: 'Tags (comma-separated)', key: 'tags', type: 'text' },
+              ].map(({ label, key, type }) => (
+                <div key={key} style={{ marginBottom: 12 }}>
+                  <label style={labelStyle}>{label}</label>
+                  {type === 'textarea' ? (
+                    <textarea rows={2} value={draft[key]} onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))}
+                      style={{ ...editInput, resize: 'vertical' }} />
+                  ) : (
+                    <input type="text" value={draft[key]} onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))}
+                      style={editInput} />
+                  )}
+                </div>
+              ))}
+              <div style={{ marginBottom: 12 }}>
+                <label style={labelStyle}>Department</label>
+                <select value={draft.department} onChange={e => setDraft(d => ({ ...d, department: e.target.value }))} style={editInput}>
+                  {DEPTS.map(d => <option key={d}>{d}</option>)}
+                </select>
+              </div>
+              {updateMutation.error && (
+                <div style={{ fontSize: 12, color: '#f87171', padding: '8px 12px', borderRadius: 6, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', marginTop: 8 }}>
+                  {updateMutation.error.message}
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {doc.description && (
+                <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.65, marginBottom: 20,
+                  padding: '12px 14px', background: 'rgba(0,107,69,0.04)', borderRadius: 8,
+                  borderLeft: '3px solid var(--border-hi)' }}>
+                  {doc.description}
+                </p>
+              )}
+
+              {/* Metadata table */}
+              <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 20 }}>
+                {[
+                  ['Author',    doc.author],
+                  ['Department', doc.department],
+                  ['Uploaded',  date(doc.uploadedAt)],
+                  ['File Size', fmt(doc.fileSizeBytes)],
+                  ['Storage',   doc.storageTier],
+                  ['Filename',  doc.filename || doc.title],
+                ].map(([k, v], i, arr) => (
+                  <div key={k} style={{ display: 'flex', padding: '10px 14px',
+                    borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
+                    background: i % 2 === 0 ? 'rgba(0,107,69,0.03)' : 'transparent' }}>
+                    <span style={{ width: 100, flexShrink: 0, fontSize: 11, color: 'var(--muted)', fontWeight: 700, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text)', wordBreak: 'break-all' }}>{v}</span>
+                  </div>
                 ))}
               </div>
-            </div>
+
+              {/* Tags */}
+              {doc.tags?.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>Tags</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {doc.tags.map(t => (
+                      <span key={t} style={{ padding: '3px 9px', borderRadius: 20, background: 'rgba(0,107,69,0.07)', color: 'var(--muted)', fontSize: 12, border: '1px solid var(--border)' }}>#{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Archive warning */}
@@ -141,12 +208,12 @@ export default function DocumentDrawer({ doc, onClose }) {
           )}
 
           {/* Flow info */}
-          <div style={{ padding: '12px 14px', borderRadius: 9, background: 'rgba(37,99,235,0.05)', border: '1px solid rgba(37,99,235,0.15)' }}>
-            <div style={{ fontSize: 10, color: '#3b82f6', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>Request Flow</div>
+          <div style={{ padding: '12px 14px', borderRadius: 9, background: 'rgba(0,107,69,0.05)', border: '1px solid rgba(0,107,69,0.15)' }}>
+            <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>Request Flow</div>
             {['React SPA', 'Node.js BFF :4000', 'Azure APIM', 'Document Service :8080', 'Azure Blob Storage'].map((step, i, arr) => (
               <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: i < arr.length - 1 ? 4 : 0 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: i === arr.length - 1 ? 'var(--green)' : '#3b82f6', flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: i === arr.length - 1 ? 'var(--green)' : '#64748b', fontFamily: 'var(--font-mono)' }}>{step}</span>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: i === arr.length - 1 ? 'var(--green)' : 'var(--accent-hi)', flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: i === arr.length - 1 ? 'var(--green)' : 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{step}</span>
                 {i < arr.length - 1 && <span style={{ fontSize: 10, color: '#374151', marginLeft: 'auto' }}>→</span>}
               </div>
             ))}
@@ -164,12 +231,24 @@ export default function DocumentDrawer({ doc, onClose }) {
             {downloadMutation.isLoading ? 'Generating SAS URL…' : isArchive && !rehydrated ? 'Rehydrate First' : '↓ Download (SAS Link, 15 min)'}
           </button>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button style={{ flex: 1, ...btnSecondary }}>✎ Edit Metadata</button>
-            <button onClick={() => { if (window.confirm('Delete this document?')) deleteMutation.mutate(); }}
-              disabled={deleteMutation.isLoading}
-              style={{ ...btnSecondary, color: '#f87171', borderColor: 'rgba(239,68,68,0.2)' }}>
-              {deleteMutation.isLoading ? '…' : 'Delete'}
-            </button>
+            {editing ? (
+              <>
+                <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isLoading}
+                  style={{ flex: 1, ...btnSecondary, color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}>
+                  {updateMutation.isLoading ? 'Saving…' : 'Save Changes'}
+                </button>
+                <button onClick={() => setEditing(false)} style={{ ...btnSecondary }}>Cancel</button>
+              </>
+            ) : (
+              <>
+                <button onClick={startEdit} style={{ flex: 1, ...btnSecondary }}>✎ Edit Metadata</button>
+                <button onClick={() => { if (window.confirm('Delete this document?')) deleteMutation.mutate(); }}
+                  disabled={deleteMutation.isLoading}
+                  style={{ ...btnSecondary, color: '#f87171', borderColor: 'rgba(239,68,68,0.2)' }}>
+                  {deleteMutation.isLoading ? '…' : 'Delete'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -179,3 +258,5 @@ export default function DocumentDrawer({ doc, onClose }) {
 
 const btnSm = { padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600 };
 const btnSecondary = { padding: '9px 14px', borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' };
+const editInput = { width: '100%', padding: '8px 11px', borderRadius: 7, border: '1px solid var(--border-hi)', background: 'rgba(255,255,255,0.05)', color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: 'inherit' };
+const labelStyle = { display: 'block', fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5, fontFamily: 'var(--font-mono)' };

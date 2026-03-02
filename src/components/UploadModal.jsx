@@ -67,13 +67,13 @@ export default function UploadModal({ onClose }) {
         <div {...getRootProps()} style={{
           border: `2px dashed ${isDragActive ? 'var(--accent)' : file ? 'rgba(16,185,129,0.4)' : 'var(--border-hi)'}`,
           borderRadius: 12, padding: '28px 20px', textAlign: 'center', cursor: 'pointer',
-          background: isDragActive ? 'rgba(37,99,235,0.06)' : file ? 'rgba(16,185,129,0.04)' : 'rgba(255,255,255,0.02)',
+          background: isDragActive ? 'rgba(0,107,69,0.06)' : file ? 'rgba(0,107,69,0.04)' : 'rgba(0,107,69,0.02)',
           marginBottom: 22, transition: 'all 0.2s',
         }}>
           <input {...getInputProps()} />
           {file ? (
             <>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-hi)', fontWeight: 700, marginBottom: 4, background: 'rgba(37,99,235,0.15)', display: 'inline-block', padding: '3px 10px', borderRadius: 6 }}>{mimeLabel}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)', fontWeight: 700, marginBottom: 4, background: 'rgba(0,107,69,0.10)', display: 'inline-block', padding: '3px 10px', borderRadius: 6 }}>{mimeLabel}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginTop: 8 }}>{file.name}</div>
               <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{(file.size / 1024 / 1024).toFixed(2)} MB</div>
             </>
@@ -149,7 +149,7 @@ export default function UploadModal({ onClose }) {
 
 const inputStyle = {
   width: '100%', padding: '9px 13px', borderRadius: 8,
-  background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+  background: 'rgba(0,107,69,0.03)', border: '1px solid var(--border)',
   color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: 'inherit',
 };
 const labelStyle = {

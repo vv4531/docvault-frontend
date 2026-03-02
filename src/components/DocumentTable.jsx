@@ -57,7 +57,7 @@ export function MimeBadge({ mimeType }) {
   return (
     <span style={{ display: 'inline-block', padding: '2px 7px', borderRadius: 4, fontSize: 10,
       fontWeight: 800, fontFamily: 'var(--font-mono)', letterSpacing: '0.04em',
-      color: '#3b82f6', background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)' }}>
+      color: 'var(--accent)', background: 'rgba(0,107,69,0.10)', border: '1px solid rgba(0,107,69,0.2)' }}>
       {label}
     </span>
   );
@@ -77,7 +77,7 @@ export default function DocumentTable({ docs = [], loading, onSelect }) {
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ display: 'grid', gridTemplateColumns: COLS.join(' '), padding: '10px 20px',
-        background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)',
+        background: 'rgba(0,107,69,0.04)', borderBottom: '1px solid var(--border)',
         fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.09em',
         textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
         <span>Document</span><span>Department</span><span>Uploaded</span><span>Size</span><span>Tier</span><span></span>

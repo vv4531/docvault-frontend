@@ -51,7 +51,7 @@ export default function SearchPage() {
             style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: 11,
               background: 'var(--surface)', border: '1px solid var(--border-hi)',
               color: 'var(--text)', fontSize: 14, outline: 'none',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)' }} />
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.04)' }} />
         </div>
         <button onClick={submit} style={{
           padding: '12px 24px', borderRadius: 11, border: 'none', cursor: 'pointer',
@@ -93,10 +93,10 @@ export default function SearchPage() {
 
       {/* AI Answers */}
       {answers.length > 0 && (
-        <div style={{ padding: '16px 18px', borderRadius: 10, background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.2)', marginBottom: 20 }}>
+        <div style={{ padding: '16px 18px', borderRadius: 10, background: 'rgba(0,107,69,0.05)', border: '1px solid rgba(0,107,69,0.2)', marginBottom: 20 }}>
           <div style={{ fontSize: 10, color: 'var(--accent-hi)', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', marginBottom: 8 }}>Azure AI Extracted Answer</div>
           {answers.map((a, i) => (
-            <p key={i} style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: a.text }} />
+            <p key={i} style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: a.text }} />
           ))}
         </div>
       )}
