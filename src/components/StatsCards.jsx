@@ -1,34 +1,97 @@
 // src/components/StatsCards.jsx
-const CARDS = [
-  { key: 'total',   label: 'Total Documents', accent: '#2563eb', fmt: v => v },
-  { key: 'hot',     label: 'Hot Tier',        accent: '#ef4444', fmt: v => v, sub: 'instant access' },
-  { key: 'cool',    label: 'Cool / Cold',     accent: '#06b6d4', fmt: v => v, sub: 'secs to retrieve' },
-  { key: 'archive', label: 'Archived',        accent: '#6b7280', fmt: v => v, sub: '1-15 hr rehydration' },
-  { key: 'totalMb', label: 'Total Storage',   accent: '#10b981', fmt: v => `${v} MB`, sub: 'across all tiers' },
-];
+const DEPT_ORDER = ['Finance','HR','Engineering','Legal','Product','Marketing','General'];
+
+const DEPT_CFG = {
+  Finance:     { color: '#10b981', icon: '💼' },
+  HR:          { color: '#f59e0b', icon: '👥' },
+  Engineering: { color: '#3b82f6', icon: '⚙️' },
+  Legal:       { color: '#8b5cf6', icon: '⚖️' },
+  Product:     { color: '#ec4899', icon: '📦' },
+  Marketing:   { color: '#f97316', icon: '📣' },
+  General:     { color: '#6b7280', icon: '📁' },
+};
 
 export default function StatsCards({ stats = {} }) {
+  const byDept  = stats.byDepartment || [];
+  const deptMap = Object.fromEntries(byDept.map(d => [d.department, d.count]));
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 4 }}>
-      {CARDS.map(({ key, label, accent, fmt, sub }, i) => (
-        <div key={key} className="animate-fade-up" style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 12, padding: '18px 20px', position: 'relative', overflow: 'hidden',
-          animationDelay: `${i * 0.06}s`,
-        }}>
-          <div style={{ position: 'absolute', inset: 0, opacity: 0.04,
-            background: `radial-gradient(circle at 80% 20%, ${accent}, transparent 70%)` }} />
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
-            background: accent, borderRadius: '12px 0 0 12px' }} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 4 }}>
+
+      {/* ── Total banner ── */}
+      <div className="animate-fade-up" style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 12, padding: '18px 24px',
+        display: 'flex', alignItems: 'center', gap: 20,
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
+          background: 'linear-gradient(180deg, var(--accent), var(--cyan))',
+          borderRadius: '12px 0 0 12px' }} />
+        <div style={{ paddingLeft: 8 }}>
           <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.07em',
-            textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>{label}</div>
-          <div style={{ fontSize: 30, fontWeight: 800, color: 'var(--text)',
-            fontFamily: 'var(--font-display)', lineHeight: 1 }}>
-            {fmt(stats[key] ?? '—')}
+            textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 4 }}>
+            Total Documents
           </div>
-          {sub && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 5 }}>{sub}</div>}
+          <div style={{ fontSize: 38, fontWeight: 800, color: 'var(--text)',
+            fontFamily: 'var(--font-display)', lineHeight: 1 }}>
+            {stats.total ?? '—'}
+          </div>
         </div>
-      ))}
+
+        <div style={{ flex: 1 }} />
+
+        {/* Mini tier breakdown */}
+        <div style={{ display: 'flex', gap: 20 }}>
+          {[
+            { label: 'Hot',     val: stats.hot,     color: '#ef4444' },
+            { label: 'Cool',    val: stats.cool,    color: '#06b6d4' },
+            { label: 'Cold',    val: stats.cold,    color: '#8b5cf6' },
+            { label: 'Archive', val: stats.archive, color: '#6b7280' },
+          ].map(({ label, val, color }) => (
+            <div key={label} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color,
+                fontFamily: 'var(--font-display)', lineHeight: 1 }}>
+                {val ?? 0}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)',
+                textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 3 }}>
+                {label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Department cards ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 12 }}>
+        {DEPT_ORDER.map((dept, i) => {
+          const cfg   = DEPT_CFG[dept];
+          const count = deptMap[dept] ?? 0;
+          return (
+            <div key={dept} className="animate-fade-up" style={{
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: 12, padding: '14px 16px',
+              position: 'relative', overflow: 'hidden',
+              animationDelay: `${(i + 1) * 0.05}s`,
+            }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
+                background: cfg.color, borderRadius: '12px 0 0 12px' }} />
+              <div style={{ fontSize: 16, marginBottom: 8, lineHeight: 1 }}>{cfg.icon}</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)',
+                fontFamily: 'var(--font-display)', lineHeight: 1, marginBottom: 6 }}>
+                {count}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                fontFamily: 'var(--font-mono)', lineHeight: 1.3 }}>
+                {dept}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
     </div>
   );
 }
