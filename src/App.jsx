@@ -92,8 +92,8 @@ function AppShell({ onLogout }) {
         {/* Nav */}
         <nav style={{ display: 'flex', gap: 2 }}>
           {[
-            { to: '/',       label: 'Dashboard', icon: <GridIcon /> },
-            { to: '/search', label: 'Search',    icon: <SearchIcon /> },
+            { to: '/',          label: 'Search',    icon: <SearchIcon /> },
+            { to: '/dashboard', label: 'Dashboard', icon: <GridIcon /> },
           ].map(({ to, label, icon }) => (
             <NavLink key={to} to={to} end className="nav-link" style={({ isActive }) => ({
               display: 'flex', alignItems: 'center', gap: 7,
@@ -132,8 +132,8 @@ function AppShell({ onLogout }) {
       {/* ── Main ── */}
       <main style={{ flex: 1, overflow: 'auto' }}>
         <Routes>
-          <Route path="/"       element={<Dashboard />} />
-          <Route path="/search" element={<SearchPage />} />
+          <Route path="/"          element={<SearchPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </main>
 
