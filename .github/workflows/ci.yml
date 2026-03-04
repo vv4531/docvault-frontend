@@ -27,8 +27,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/vvaddineni/docvault-frontend:latest
-            ghcr.io/vvaddineni/docvault-frontend:${{ github.sha }}
+            ghcr.io/vv4531/docvault-frontend:latest
+            ghcr.io/vv4531/docvault-frontend:${{ github.sha }}
 
       - name: Log in to Azure
         uses: azure/login@v2
@@ -40,7 +40,7 @@ jobs:
         with:
           containerAppName: docvault-frontend
           resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          imageToDeploy: ghcr.io/vvaddineni/docvault-frontend:${{ github.sha }}
+          imageToDeploy: ghcr.io/vv4531/docvault-frontend:${{ github.sha }}
           registryUrl: ghcr.io
           registryUsername: ${{ github.actor }}
           registryPassword: ${{ secrets.GHCR_TOKEN }}
