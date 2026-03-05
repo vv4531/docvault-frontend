@@ -43,6 +43,7 @@ export const documentsApi = {
 
 // ── Search ─────────────────────────────────────────────────────────────────
 export const searchApi = {
-  search:   (params)  => http.get('/search', { params }),
-  suggest:  (prefix)  => http.get('/search/suggest', { params: { q: prefix } }),
+  search:        (params) => http.get('/search', { params }),
+  suggest:       (prefix) => http.get('/search/suggest', { params: { q: prefix } }),
+  standardSearch:(params) => http.get('/documents/search', { params }),
 };

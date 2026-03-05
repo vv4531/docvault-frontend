@@ -6,6 +6,7 @@ import DocumentTable from '../components/DocumentTable';
 import DocumentDrawer from '../components/DocumentDrawer';
 
 export default function SearchPage() {
+  const [mode, setMode]           = useState('ai');   // 'ai' | 'standard'
   const [query, setQuery]         = useState('');
   const [submitted, setSubmitted] = useState('');
   const [dept, setDept]           = useState('');
@@ -15,28 +16,99 @@ export default function SearchPage() {
   const [selectedDoc, setSelected] = useState(null);
   const inputRef = useRef(null);
 
-  const { data, isLoading, isFetching } = useQuery(
-    ['search', submitted, dept, tier, dateFrom, dateTo],
+  const switchMode = (next) => {
+    setMode(next);
+    setSubmitted('');   // clear results when switching mode
+  };
+
+  // AI Search query
+  const aiQuery = useQuery(
+    ['search-ai', submitted, dept, tier, dateFrom, dateTo],
     () => searchApi.search({ q: submitted, department: dept || undefined, tier: tier || undefined, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined }),
-    { enabled: !!submitted, keepPreviousData: true }
+    { enabled: mode === 'ai' && !!submitted, keepPreviousData: true }
   );
+
+  // Standard (Cosmos) search query
+  const stdQuery = useQuery(
+    ['search-std', submitted],
+    () => searchApi.standardSearch({ q: submitted }),
+    { enabled: mode === 'standard' && !!submitted, keepPreviousData: true }
+  );
+
+  const active   = mode === 'ai' ? aiQuery : stdQuery;
+  const { isLoading, isFetching, data } = active;
 
   const submit = () => { if (query.trim()) setSubmitted(query.trim()); };
 
-  const results  = data?.results  || [];
-  const facets   = data?.facets   || {};
-  const count    = data?.count    || 0;
-  const answers  = data?.answers  || [];
+  const results = data?.results || [];
+  const facets  = data?.facets  || {};
+  const count   = data?.count   || 0;
+  const answers = data?.answers || [];
+
+  const isAI = mode === 'ai';
 
   return (
     <div style={{ padding: '28px 32px', minHeight: '100%' }}>
-      <div className="animate-fade-up" style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--text)', lineHeight: 1.1, marginBottom: 4 }}>
-          Search Documents
-        </h1>
-        <p style={{ color: 'var(--muted)', fontSize: 13 }}>
-          Powered by Azure AI Search — full-text, semantic ranking, and faceted filters
-        </p>
+
+      {/* Header + mode toggle */}
+      <div className="animate-fade-up" style={{ marginBottom: 22, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--text)', lineHeight: 1.1, marginBottom: 4 }}>
+            Search Documents
+          </h1>
+          <p style={{ color: 'var(--muted)', fontSize: 13 }}>
+            {isAI
+              ? 'Powered by Azure AI Search — full-text, semantic ranking, and faceted filters'
+              : 'Standard search — queries title, author, department, tags, and description in Cosmos DB'}
+          </p>
+        </div>
+
+        {/* Radio toggle */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 2,
+          padding: '4px', borderRadius: 10,
+          background: 'rgba(27,63,107,0.07)', border: '1px solid var(--border)',
+          flexShrink: 0,
+        }}>
+          {[
+            { value: 'ai',       label: 'AI Search',       desc: 'Azure AI Search index' },
+            { value: 'standard', label: 'Standard Search', desc: 'Cosmos DB metadata' },
+          ].map(({ value, label, desc }) => {
+            const active = mode === value;
+            return (
+              <label key={value} title={desc} style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '7px 14px', borderRadius: 7, cursor: 'pointer',
+                background: active ? 'var(--surface)' : 'transparent',
+                boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.15s',
+              }}>
+                <input
+                  type="radio"
+                  name="search-mode"
+                  value={value}
+                  checked={active}
+                  onChange={() => switchMode(value)}
+                  style={{ display: 'none' }}
+                />
+                <span style={{
+                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                  background: active
+                    ? (value === 'ai' ? 'var(--cyan)' : 'var(--green)')
+                    : 'var(--border-hi)',
+                  transition: 'background 0.15s',
+                }} />
+                <span style={{
+                  fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-display)',
+                  color: active ? 'var(--text)' : 'var(--muted)',
+                  letterSpacing: '0.01em', userSelect: 'none',
+                }}>
+                  {label}
+                </span>
+              </label>
+            );
+          })}
+        </div>
       </div>
 
       {/* Search input */}
@@ -47,7 +119,7 @@ export default function SearchPage() {
           </span>
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && submit()}
-            placeholder="Search by keyword, phrase, author, tag…"
+            placeholder={isAI ? 'Search by keyword, phrase, author, tag…' : 'Search title, author, department, tags, description…'}
             style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: 11,
               background: 'var(--surface)', border: '1px solid var(--border-hi)',
               color: 'var(--text)', fontSize: 14, outline: 'none',
@@ -55,7 +127,9 @@ export default function SearchPage() {
         </div>
         <button onClick={submit} style={{
           padding: '12px 24px', borderRadius: 11, border: 'none', cursor: 'pointer',
-          background: 'linear-gradient(135deg, var(--accent), var(--cyan))',
+          background: isAI
+            ? 'linear-gradient(135deg, var(--accent), var(--cyan))'
+            : 'linear-gradient(135deg, var(--accent), var(--green))',
           color: '#fff', fontWeight: 700, fontSize: 13, fontFamily: 'var(--font-display)',
           opacity: isFetching ? 0.7 : 1,
         }}>
@@ -63,36 +137,38 @@ export default function SearchPage() {
         </button>
       </div>
 
-      {/* Filters row */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        {[
-          { label: 'Department', value: dept, set: setDept, opts: ['', 'Finance','HR','Engineering','Legal','Product','Marketing'] },
-          { label: 'Tier',       value: tier, set: setTier, opts: ['', 'Hot','Archive'] },
-        ].map(({ label, value, set, opts }) => (
-          <select key={label} value={value} onChange={e => set(e.target.value)} style={{
-            padding: '7px 13px', borderRadius: 8, border: '1px solid var(--border)',
-            background: 'var(--surface)', color: value ? 'var(--text)' : 'var(--muted)',
-            fontSize: 12, fontWeight: 600, cursor: 'pointer', outline: 'none',
-          }}>
-            <option value="">{label}: All</option>
-            {opts.filter(Boolean).map(o => <option key={o}>{o}</option>)}
-          </select>
-        ))}
-        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-          title="From date" style={{ ...dateInput, color: dateFrom ? 'var(--text)' : 'var(--muted)' }} />
-        <span style={{ color: 'var(--muted)', alignSelf: 'center', fontSize: 12 }}>to</span>
-        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-          title="To date" style={{ ...dateInput, color: dateTo ? 'var(--text)' : 'var(--muted)' }} />
-        {(dept || tier || dateFrom || dateTo) && (
-          <button onClick={() => { setDept(''); setTier(''); setDateFrom(''); setDateTo(''); }}
-            style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-            Clear filters
-          </button>
-        )}
-      </div>
+      {/* Filters row — AI Search only */}
+      {isAI && (
+        <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+          {[
+            { label: 'Department', value: dept, set: setDept, opts: ['', 'Finance','HR','Engineering','Legal','Product','Marketing'] },
+            { label: 'Tier',       value: tier, set: setTier, opts: ['', 'Hot','Archive'] },
+          ].map(({ label, value, set, opts }) => (
+            <select key={label} value={value} onChange={e => set(e.target.value)} style={{
+              padding: '7px 13px', borderRadius: 8, border: '1px solid var(--border)',
+              background: 'var(--surface)', color: value ? 'var(--text)' : 'var(--muted)',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', outline: 'none',
+            }}>
+              <option value="">{label}: All</option>
+              {opts.filter(Boolean).map(o => <option key={o}>{o}</option>)}
+            </select>
+          ))}
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            title="From date" style={{ ...dateInput, color: dateFrom ? 'var(--text)' : 'var(--muted)' }} />
+          <span style={{ color: 'var(--muted)', alignSelf: 'center', fontSize: 12 }}>to</span>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            title="To date" style={{ ...dateInput, color: dateTo ? 'var(--text)' : 'var(--muted)' }} />
+          {(dept || tier || dateFrom || dateTo) && (
+            <button onClick={() => { setDept(''); setTier(''); setDateFrom(''); setDateTo(''); }}
+              style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
 
-      {/* AI Answers */}
-      {answers.length > 0 && (
+      {/* AI Answers — AI Search only */}
+      {isAI && answers.length > 0 && (
         <div style={{ padding: '16px 18px', borderRadius: 10, background: 'rgba(0,107,69,0.05)', border: '1px solid rgba(0,107,69,0.2)', marginBottom: 20 }}>
           <div style={{ fontSize: 10, color: 'var(--accent-hi)', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', marginBottom: 8 }}>Azure AI Extracted Answer</div>
           {answers.map((a, i) => (
@@ -101,8 +177,8 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Facets */}
-      {submitted && Object.keys(facets).length > 0 && (
+      {/* Facets — AI Search only */}
+      {isAI && submitted && Object.keys(facets).length > 0 && (
         <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
           {Object.entries(facets).slice(0, 3).map(([facet, values]) => (
             <div key={facet} style={{ fontSize: 12 }}>
@@ -133,7 +209,11 @@ export default function SearchPage() {
         <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--muted)' }}>
           <div style={{ fontSize: 48, opacity: 0.15, marginBottom: 14, lineHeight: 1 }}>⊚</div>
           <div style={{ fontSize: 16, fontWeight: 600, color: '#4b5563' }}>Start searching</div>
-          <div style={{ fontSize: 13, marginTop: 6 }}>Full-text search across all document content, metadata, and tags</div>
+          <div style={{ fontSize: 13, marginTop: 6 }}>
+            {isAI
+              ? 'Full-text search across all document content, metadata, and tags'
+              : 'Search by title, author, department, tags, or description'}
+          </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 20, flexWrap: 'wrap' }}>
             {['quarterly report', 'compliance 2022', 'azure migration', 'HR policy'].map(s => (
               <button key={s} onClick={() => { setQuery(s); setSubmitted(s); }}
