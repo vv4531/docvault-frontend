@@ -13,24 +13,24 @@ const queryClient = new QueryClient({
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
   :root {
-    --bg:        #f0f7f3;
+    --bg:        #EEF3F8;
     --surface:   #ffffff;
-    --border:    rgba(0,100,60,0.1);
-    --border-hi: rgba(0,100,60,0.22);
-    --text:      #0d2118;
-    --muted:     #4d7060;
-    --accent:    #006B45;
-    --accent-hi: #008a57;
-    --cyan:      #00976a;
-    --green:     #006B45;
-    --orange:    #c96b00;
-    --red:       #c0392b;
-    --gray:      #5a7060;
-    --font-display: 'Syne', sans-serif;
-    --font-body:    'Lato', sans-serif;
+    --border:    rgba(27,63,107,0.12);
+    --border-hi: rgba(27,63,107,0.26);
+    --text:      #0D1E35;
+    --muted:     #4A6785;
+    --accent:    #1B3F6B;
+    --accent-hi: #0073B1;
+    --cyan:      #00A2DC;
+    --green:     #00875A;
+    --orange:    #E67300;
+    --red:       #C0392B;
+    --gray:      #5B7A9D;
+    --font-display: 'Nunito Sans', sans-serif;
+    --font-body:    'Nunito Sans', sans-serif;
     --font-mono:    'JetBrains Mono', monospace;
   }
 
@@ -44,10 +44,10 @@ const CSS = `
   }
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(0,107,69,0.2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: rgba(27,63,107,0.2); border-radius: 3px; }
   input, textarea, select, button { font-family: inherit; }
   input::placeholder, textarea::placeholder { color: var(--muted); }
-  option { background: #f0f7f3; color: #0d2118; }
+  option { background: #EEF3F8; color: #0D1E35; }
 
   @keyframes fadeUp   { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:none } }
   @keyframes slideIn  { from { opacity:0; transform:translateX(32px) } to { opacity:1; transform:none } }
@@ -57,9 +57,9 @@ const CSS = `
   .animate-fade-up  { animation: fadeUp  0.35s ease both; }
   .animate-slide-in { animation: slideIn 0.28s ease both; }
 
-  .row-hover:hover { background: rgba(0,107,69,0.04) !important; cursor: pointer; }
+  .row-hover:hover { background: rgba(27,63,107,0.04) !important; cursor: pointer; }
   .btn-ghost:hover { background: rgba(0,0,0,0.05) !important; }
-  .nav-link.active { color: var(--accent) !important; background: rgba(0,107,69,0.08) !important; }
+  .nav-link.active { color: var(--accent-hi) !important; background: rgba(27,63,107,0.09) !important; }
 `;
 
 function AppShell({ onLogout }) {
@@ -72,35 +72,36 @@ function AppShell({ onLogout }) {
       {/* ── Header ── */}
       <header style={{
         display: 'flex', alignItems: 'center', gap: 20,
-        padding: '0 24px', height: 54, flexShrink: 0,
-        background: 'var(--surface)', borderBottom: '1px solid var(--border)',
+        padding: '0 24px', height: 56, flexShrink: 0,
+        background: 'var(--accent)', borderBottom: 'none',
+        boxShadow: '0 2px 8px rgba(13,30,53,0.3)',
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 12 }}>
           <div style={{
             width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-            background: 'linear-gradient(135deg, var(--accent) 0%, var(--cyan) 100%)',
+            background: 'rgba(255,255,255,0.15)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2">
               <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
             </svg>
           </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>DocVault</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#ffffff' }}>DocVault</div>
         </div>
 
         {/* Nav */}
         <nav style={{ display: 'flex', gap: 2 }}>
           {[
-            { to: '/',          label: 'Search',    icon: <SearchIcon /> },
-            { to: '/dashboard', label: 'Dashboard', icon: <GridIcon /> },
+            { to: '/',       label: 'Dashboard', icon: <GridIcon /> },
+            { to: '/search', label: 'Search',    icon: <SearchIcon /> },
           ].map(({ to, label, icon }) => (
             <NavLink key={to} to={to} end className="nav-link" style={({ isActive }) => ({
               display: 'flex', alignItems: 'center', gap: 7,
               padding: '6px 14px', borderRadius: 8, textDecoration: 'none',
-              fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
-              color: isActive ? 'var(--accent-hi)' : 'var(--muted)',
-              background: isActive ? 'rgba(0,107,69,0.08)' : 'transparent',
+              fontSize: 13, fontWeight: 700, transition: 'all 0.15s',
+              color: isActive ? '#ffffff' : 'rgba(255,255,255,0.65)',
+              background: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
             })}>
               {icon} {label}
             </NavLink>
@@ -112,7 +113,7 @@ function AppShell({ onLogout }) {
         {/* Upload */}
         <button onClick={() => setShowUpload(true)} style={{
           padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
-          background: 'linear-gradient(135deg, var(--accent), var(--cyan))',
+          background: 'var(--cyan)',
           color: '#fff', fontWeight: 700, fontSize: 13, fontFamily: 'var(--font-display)',
           letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: 6,
         }}>
@@ -121,8 +122,8 @@ function AppShell({ onLogout }) {
 
         {/* Sign out */}
         <button onClick={onLogout} className="btn-ghost" style={{
-          padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)',
-          background: 'transparent', color: 'var(--muted)', fontSize: 12,
+          padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)',
+          background: 'transparent', color: 'rgba(255,255,255,0.75)', fontSize: 12,
           fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
         }}>
           <SignOutIcon /> Sign out
@@ -132,8 +133,8 @@ function AppShell({ onLogout }) {
       {/* ── Main ── */}
       <main style={{ flex: 1, overflow: 'auto' }}>
         <Routes>
-          <Route path="/"          element={<SearchPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/"       element={<Dashboard />} />
+          <Route path="/search" element={<SearchPage />} />
         </Routes>
       </main>
 
