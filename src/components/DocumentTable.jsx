@@ -69,7 +69,7 @@ export default function DocumentTable({ docs = [], loading, onSelect }) {
   const handleDownload = (e, doc) => {
     e.stopPropagation();
     const a = document.createElement('a');
-    a.href = `/api/documents/${doc.id}/file`;
+    a.href = `/api/documents/${doc.id}/file?download=true`;
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
@@ -200,32 +200,53 @@ export default function DocumentTable({ docs = [], loading, onSelect }) {
             </div>
 
             {/* iframe or unsupported message */}
-            {previewDoc.mimeType === 'application/pdf' || previewDoc.mimeType === 'text/plain' ? (
-              <iframe
-                src={`/api/documents/${previewDoc.id}/file`}
-                title={previewDoc.title}
-                style={{ flex: 1, border: 'none', width: '100%' }}
-              />
-            ) : (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, color: 'var(--muted)', padding: 40 }}>
-                <div style={{ fontSize: 48, opacity: 0.15 }}>◫</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Preview not available</div>
-                <div style={{ fontSize: 13, textAlign: 'center', maxWidth: 360 }}>
-                  {MIME_LABELS[previewDoc.mimeType] || 'This file type'} cannot be previewed in the browser. Download the file to open it in its native application.
-                </div>
-                <button
-                  onClick={e => { handleDownload(e, previewDoc); setPreviewDoc(null); }}
-                  disabled={previewDoc.storageTier === 'Cool'}
-                  style={{
-                    padding: '9px 20px', borderRadius: 9, border: 'none',
-                    background: 'linear-gradient(135deg, var(--accent), var(--cyan))',
-                    color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer',
-                  }}
-                >
-                  ↓ Download to open
-                </button>
-              </div>
-            )}
+            {(() => {
+              const mime = previewDoc.mimeType;
+              const officeTypes = [
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'application/msword',
+                'application/vnd.ms-excel',
+                'application/vnd.ms-powerpoint',
+              ];
+              const fileUrl = encodeURIComponent(
+                `${window.location.origin}/api/documents/${previewDoc.id}/file`
+              );
+              if (mime === 'application/pdf' || mime === 'text/plain') {
+                return (
+                  <iframe
+                    src={`/api/documents/${previewDoc.id}/file`}
+                    title={previewDoc.title}
+                    style={{ flex: 1, border: 'none', width: '100%' }}
+                  />
+                );
+              } else if (officeTypes.includes(mime)) {
+                return (
+                  <iframe
+                    src={`https://view.officeapps.live.com/op/embed.aspx?src=${fileUrl}`}
+                    title={previewDoc.title}
+                    style={{ flex: 1, border: 'none', width: '100%' }}
+                  />
+                );
+              } else {
+                return (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, color: 'var(--muted)', padding: 40 }}>
+                    <div style={{ fontSize: 48, opacity: 0.15 }}>◫</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Preview not available</div>
+                    <div style={{ fontSize: 13, textAlign: 'center', maxWidth: 360 }}>
+                      {MIME_LABELS[mime] || 'This file type'} cannot be previewed in the browser. Download the file to open it.
+                    </div>
+                    <button
+                      onClick={e => { handleDownload(e, previewDoc); setPreviewDoc(null); }}
+                      style={{ padding: '9px 20px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, var(--accent), var(--cyan))', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                    >
+                      ↓ Download to open
+                    </button>
+                  </div>
+                );
+              }
+            })()}
           </div>
         </div>
       )}
