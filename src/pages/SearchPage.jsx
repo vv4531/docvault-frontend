@@ -96,7 +96,7 @@ export default function SearchPage() {
         <div style={{ padding: '16px 18px', borderRadius: 10, background: 'rgba(0,107,69,0.05)', border: '1px solid rgba(0,107,69,0.2)', marginBottom: 20 }}>
           <div style={{ fontSize: 10, color: 'var(--accent-hi)', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', marginBottom: 8 }}>Azure AI Extracted Answer</div>
           {answers.map((a, i) => (
-            <p key={i} style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: a.text }} />
+            <p key={i} style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>{a.text?.replace(/<[^>]*>/g, '')}</p>
           ))}
         </div>
       )}
