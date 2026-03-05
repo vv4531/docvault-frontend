@@ -18,10 +18,8 @@ function date(iso) {
 
 export default function DocumentDrawer({ doc, onClose, readOnly = false }) {
   const qc = useQueryClient();
-  const [rehydrated, setRehydrated] = useState(false);
-  const [editing, setEditing]       = useState(false);
-  const [draft, setDraft]           = useState({});
-  const isCool = doc.storageTier === 'Cool';
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft]     = useState({});
 
   const startEdit = () => {
     setDraft({
@@ -33,20 +31,6 @@ export default function DocumentDrawer({ doc, onClose, readOnly = false }) {
     });
     setEditing(true);
   };
-
-  const handleDownload = () => {
-    const a = document.createElement('a');
-    a.href = `/api/documents/${doc.id}/file`;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  const rehydrateMutation = useMutation(
-    (priority) => documentsApi.rehydrate(doc.id, priority),
-    { onSuccess: () => { setRehydrated(true); qc.invalidateQueries('documents'); } }
-  );
 
   const updateMutation = useMutation(
     () => documentsApi.update(doc.id, {
@@ -179,43 +163,10 @@ export default function DocumentDrawer({ doc, onClose, readOnly = false }) {
             </>
           )}
 
-          {/* Archive warning */}
-          {isCool && !rehydrated && (
-            <div style={{ padding: '12px 14px', borderRadius: 9, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6', marginBottom: 4 }}>Cool Tier</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
-                This document is in Cool storage. Download requires rehydration before it can be retrieved.
-              </div>
-              <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
-                <button onClick={() => rehydrateMutation.mutate('High')} disabled={rehydrateMutation.isLoading}
-                  style={{ ...btnSm, background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
-                  {rehydrateMutation.isLoading ? 'Starting…' : '⚡ High Priority (<1hr)'}
-                </button>
-                <button onClick={() => rehydrateMutation.mutate('Standard')} disabled={rehydrateMutation.isLoading}
-                  style={{ ...btnSm, background: 'rgba(107,114,128,0.1)', color: '#9ca3af', border: '1px solid var(--border)' }}>
-                  Standard (1-15hr)
-                </button>
-              </div>
-            </div>
-          )}
-
-          {rehydrated && (
-            <div style={{ padding: '12px 14px', borderRadius: 9, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)', marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#10b981', marginBottom: 3 }}>Rehydration Started</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)' }}>The blob is being rehydrated from Cool storage. You'll receive a notification when it's ready.</div>
-            </div>
-          )}
         </div>
 
         {/* Actions */}
         {!readOnly && <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button onClick={handleDownload} disabled={isCool && !rehydrated}
-            style={{ width: '100%', padding: '11px', borderRadius: 9, border: 'none', cursor: isCool && !rehydrated ? 'not-allowed' : 'pointer',
-              background: isCool && !rehydrated ? 'rgba(107,114,128,0.1)' : 'linear-gradient(135deg, var(--accent), var(--cyan))',
-              color: isCool && !rehydrated ? 'var(--muted)' : '#fff',
-              fontWeight: 700, fontSize: 13, fontFamily: 'var(--font-display)' }}>
-            {isCool && !rehydrated ? 'Rehydrate First' : '↓ Download'}
-          </button>
           <div style={{ display: 'flex', gap: 8 }}>
             {editing ? (
               <>
@@ -242,7 +193,6 @@ export default function DocumentDrawer({ doc, onClose, readOnly = false }) {
   );
 }
 
-const btnSm = { padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600 };
 const btnSecondary = { padding: '9px 14px', borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' };
 const editInput = { width: '100%', padding: '8px 11px', borderRadius: 7, border: '1px solid var(--border-hi)', background: 'rgba(255,255,255,0.05)', color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: 'inherit' };
 const labelStyle = { display: 'block', fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5, fontFamily: 'var(--font-mono)' };
